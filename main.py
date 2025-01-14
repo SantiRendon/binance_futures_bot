@@ -1,5 +1,6 @@
 from binance.client import Client
-from datetime import datetime
+from datetime import datetime, timezone
+import csv
 
 # Claves API de tu cuenta mock
 api_key = '7de4ca57d53aac719f84f4f2f1ceee269512766e19734dca3beaec464c92a2d1'
@@ -58,6 +59,39 @@ def get_historical_prices(symbol, interval, start_time=None, end_time=None, limi
         print(f"Error fetching historical prices for {symbol}: {e}")
         return []
 
+def export_to_csv(klines, filename):
+    """
+    Export kline (candlestick) data to a CSV file.
+
+    Args:
+        klines (list): List of kline data from Binance.
+        filename (str): Name of the CSV file to save the data.
+
+    Explanation of the CSV columns:
+        * Open Time: Start time of the candlestick (formatted as YYYY-MM-DD HH:MM:SS).
+        * Open, High, Low, Close: Prices during the candlestick.
+        * Volume: Volume traded during the candlestick.
+        * Close Time: End time of the candlestick.
+        * Quote Asset Volume: Volume in quote asset terms.
+        * Number of Trades: Total trades during the candlestick.
+        * Taker Buy Base Volume: Volume of taker buy trades in base asset.
+        * Taker Buy Quote Volume: Volume of taker buy trades in quote asset.
+        * Ignore: Reserved field (not usually relevant).
+    """
+    headers = [
+        "Open Time", "Open", "High", "Low", "Close", "Volume",
+        "Close Time", "Quote Asset Volume", "Number of Trades",
+        "Taker Buy Base Volume", "Taker Buy Quote Volume", "Ignore"
+    ]
+    with open(filename, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(headers)  # Write the header row
+        for kline in klines:
+            # Format Open Time and Close Time as readable dates
+            kline[0] = datetime.fromtimestamp(kline[0] / 1000, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            kline[6] = datetime.fromtimestamp(kline[6] / 1000, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            writer.writerow(kline)  # Write each kline as a row
+
 if __name__ == "__main__":
     # List all available pairs
     print("Fetching available trading pairs on Binance Futures...")
@@ -71,6 +105,7 @@ if __name__ == "__main__":
     btc_historical = get_historical_prices(pairs_to_check[0], '5m', start_time=None, end_time=None, limit=100)
     print("======================================================")
     print(btc_historical)
+    export_to_csv(btc_historical, "btc_historical_5m.csv")
     print("======================================================")
     # Get the current prices for the selected pairs
     prices = get_current_prices(pairs_to_check)
