@@ -68,6 +68,10 @@ if __name__ == "__main__":
     pairs_to_check = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]  # Change these as needed
     print(f"Fetching prices for: {pairs_to_check}")
 
+    btc_historical = get_historical_prices(pairs_to_check[0], '5m', start_time=None, end_time=None, limit=100)
+    print("======================================================")
+    print(btc_historical)
+    print("======================================================")
     # Get the current prices for the selected pairs
     prices = get_current_prices(pairs_to_check)
     print("Current prices:")
