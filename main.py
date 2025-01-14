@@ -1,18 +1,13 @@
-import ccxt
+from binance.client import Client
+from datetime import datetime
 
 # Claves API de tu cuenta mock
 api_key = '7de4ca57d53aac719f84f4f2f1ceee269512766e19734dca3beaec464c92a2d1'
 api_secret = '15122b41c53e6293bd122333bf8f31a12e7f8b876595a290473487e38a25d3f0'
 
-# Configuración de conexión con Binance Futures testnet
-exchange = ccxt.binance({
-    'apiKey': api_key,
-    'secret': api_secret,
-    'enableRateLimit': True,
-    'options': {
-        'defaultType': 'future',  # Usar Binance Futures
-    }
-})
+# Connect to the Binance Futures testnet
+client = Client(api_key, api_secret, testnet=True)
+client.FUTURES_URL = "https://testnet.binancefuture.com/fapi/v1"
 
 # Cambiar a testnet
 exchange.set_sandbox_mode(True)
