@@ -38,7 +38,7 @@ try:
     order = exchange.create_market_order(
         symbol=symbol,
         side='sell',  # 'buy' para LONG, 'sell' para SHORT
-        amount=0.01  # Cantidad de BTC
+        amount=0.01,  # Cantidad de BTC
     )
     print("Orden ejecutada:", order)
 except Exception as e:
