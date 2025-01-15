@@ -13,6 +13,8 @@
 .idea/**/shelf
 .idea/
 
+data/*.cvs
+
 # AWS User-specific
 .idea/**/aws.xml
 
