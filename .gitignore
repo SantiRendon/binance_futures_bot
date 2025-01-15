@@ -297,9 +297,9 @@ pyrightconfig.json
 data/**
 
 # Excepto el contenido de la carpeta notebook/data
-!notebook/data/**
+!notebooks/data/**
 
 # También deshacer el ignore de la carpeta notebook y data en sí misma
-!notebook/
-!notebook/data/
+!notebooks/
+!notebooks/data/
 
