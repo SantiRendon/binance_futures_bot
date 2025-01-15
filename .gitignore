@@ -292,3 +292,14 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/intellij,python
 /.idea/
 /.idea/
+
+# Ignorar todo el contenido de cualquier carpeta llamada data
+data/**
+
+# Excepto el contenido de la carpeta notebook/data
+!notebook/data/**
+
+# También deshacer el ignore de la carpeta notebook y data en sí misma
+!notebook/
+!notebook/data/
+
