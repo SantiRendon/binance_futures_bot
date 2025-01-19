@@ -207,5 +207,12 @@ if __name__ == "__main__":
     order_thread.start()
 
     # Keep the main thread alive
-    while True:
-        time.sleep(1)
+    try:
+        while True:
+            time.sleep(1)  # Mantén el bucle activo hasta que se interrumpa
+    except KeyboardInterrupt:
+        print("Programa detenido por el usuario con Ctrl+C.")
+        # Detener los WebSockets
+        strategy_thread.join()  # Espera a que termine el thread
+        order_thread.join()  # Espera a que termine el thread
+        print("Websockets detenidos. El programa ha finalizado.")
