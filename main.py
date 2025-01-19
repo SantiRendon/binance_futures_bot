@@ -15,8 +15,8 @@ client.FUTURES_URL = "https://testnet.binancefuture.com/fapi/v1"
 def list_available_pairs():
     """List all available trading pairs on Binance Futures."""
     try:
-        exchange_info = client.futures_exchange_info()
-        symbols = [symbol['symbol'] for symbol in exchange_info['symbols']]
+        exchange_info = client.futures_exchange_info()  # Fetch exchange info
+        symbols = [symbol['symbol'] for symbol in exchange_info['symbols']]  # Extract symbols
         return symbols
     except Exception as e:
         print(f"Error fetching available pairs: {e}")
@@ -25,8 +25,8 @@ def list_available_pairs():
 def get_current_price(symbol):
     """Fetch the current market price for a single trading pair."""
     try:
-        ticker = client.futures_symbol_ticker(symbol=symbol)
-        return float(ticker['price'])
+        ticker = client.futures_symbol_ticker(symbol=symbol)  # Fetch ticker info for the symbol
+        return float(ticker['price'])  # Return the price as a float
     except Exception as e:
         print(f"Error fetching price for {symbol}: {e}")
         return None
@@ -35,9 +35,9 @@ def get_current_prices(symbols):
     """Fetch the current prices for multiple trading pairs."""
     prices = {}
     for symbol in symbols:
-        price = get_current_price(symbol)
+        price = get_current_price(symbol)  # Fetch price for each symbol
         if price is not None:
-            prices[symbol] = price
+            prices[symbol] = price  # Add the price to the dictionary
     return prices
 
 def get_historical_prices(symbol, interval, start_time=None, end_time=None, limit=100):
@@ -50,7 +50,7 @@ def get_historical_prices(symbol, interval, start_time=None, end_time=None, limi
             endTime=end_time,
             limit=limit
         )
-        return klines
+        return klines  # Return the historical price data (candlesticks)
     except Exception as e:
         print(f"Error fetching historical prices for {symbol}: {e}")
         return []
@@ -58,14 +58,14 @@ def get_historical_prices(symbol, interval, start_time=None, end_time=None, limi
 def calculate_stop_loss_take_profit(entry_price, stop_loss_pct, take_profit_pct, side):
     """Calculate stop loss and take profit prices based on the entry price and percentages."""
     stop_loss = (
-        entry_price * (1 - stop_loss_pct / 100) if side == "BUY"
-        else entry_price * (1 + stop_loss_pct / 100)
+        entry_price * (1 - stop_loss_pct / 100) if side == "BUY"  # Calculate stop loss for buy orders
+        else entry_price * (1 + stop_loss_pct / 100)  # Calculate stop loss for sell orders
     )
     take_profit = (
-        entry_price * (1 + take_profit_pct / 100) if side == "BUY"
-        else entry_price * (1 - take_profit_pct / 100)
+        entry_price * (1 + take_profit_pct / 100) if side == "BUY"  # Calculate take profit for buy orders
+        else entry_price * (1 - take_profit_pct / 100)  # Calculate take profit for sell orders
     )
-    return round(stop_loss, 2), round(take_profit, 2)
+    return round(stop_loss, 2), round(take_profit, 2)  # Return stop loss and take profit prices rounded to 2 decimals
 
 def place_market_order(symbol, side, quantity):
     """Place a market order."""
@@ -73,10 +73,10 @@ def place_market_order(symbol, side, quantity):
         order = client.futures_create_order(
             symbol=symbol,
             side=side,
-            type="MARKET",
-            quantity=quantity
+            type="MARKET",  # Type of order
+            quantity=quantity  # Quantity of the asset to trade
         )
-        return order
+        return order  # Return the order details
     except Exception as e:
         print(f"Error placing market order for {symbol}: {e}")
         return None
@@ -86,14 +86,14 @@ def place_oco_order(symbol, side, quantity, stop_loss, take_profit):
     try:
         oco_order = client.futures_create_oco_order(
             symbol=symbol,
-            side="SELL" if side == "BUY" else "BUY",
+            side="SELL" if side == "BUY" else "BUY",  # Reverse the side for OCO orders
             quantity=quantity,
             price=take_profit,  # Take profit price
             stopPrice=stop_loss,  # Stop loss trigger price
             stopLimitPrice=stop_loss,  # Stop loss execution price
-            stopLimitTimeInForce="GTC"
+            stopLimitTimeInForce="GTC"  # Good 'Til Canceled order type
         )
-        return oco_order
+        return oco_order  # Return the OCO order details
     except Exception as e:
         print(f"Error placing OCO order for {symbol}: {e}")
         return None
@@ -111,7 +111,7 @@ def execute_trade(symbol, side, quantity, entry_price=None, stop_loss_pct=2.0, t
         take_profit_pct (float): Percentage gain to trigger take profit. Defaults to 4.0%.
     """
     try:
-        if side not in ["BUY", "SELL"]:
+        if side not in ["BUY", "SELL"]:  # Ensure side is valid
             raise ValueError("Side must be either 'BUY' or 'SELL'.")
 
         # Fetch the current market price if entry_price is not provided
@@ -137,75 +137,75 @@ def execute_trade(symbol, side, quantity, entry_price=None, stop_loss_pct=2.0, t
     except Exception as e:
         print(f"Error executing trade: {e}")
 
-# WebSocket para la estrategia de precios
+# WebSocket for the price strategy
 def start_strategy_monitor(symbol, interval, callback):
     def handle_message(msg):
-        if msg['e'] == 'kline':
+        if msg['e'] == 'kline':  # Check if message type is kline (candlestick data)
             kline = msg['k']
-            close_price = float(kline['c'])  # Precio de cierre de la vela
-            print(f"Precio actualizado: {close_price}")
+            close_price = float(kline['c'])  # Close price of the candlestick
+            print(f"Updated price: {close_price}")
             callback(close_price)
 
-    # Crear el WebSocket manager
+    # Create the WebSocket manager
     twm = ThreadedWebsocketManager(api_key=api_key, api_secret=api_secret, testnet=True)
     twm.start()
 
-    # Suscribirse al stream de kline para recibir los precios
+    # Subscribe to the kline stream for price updates
     twm.start_kline_socket(callback=handle_message, symbol=symbol, interval=interval)
 
-    print(f"WebSocket de estrategia iniciado para {symbol} ({interval}).")
+    print(f"Strategy WebSocket started for {symbol} ({interval}).")
     return twm
 
-# WebSocket para monitorear las órdenes abiertas
+# WebSocket for monitoring open orders
 def start_order_monitor(symbol, client):
     def handle_message(msg):
         try:
-            if msg['e'] == 'ORDER_TRADE_UPDATE':  # Evento de actualización de orden
-                order_status = msg['o']['X']  # Estado de la orden (FILLED, NEW)
-                order_side = msg['o']['S']  # Lado de la orden (BUY o SELL)
-                order_id = msg['o']['i']  # ID de la orden
-                symbol = msg['o']['s']  # Símbolo de la orden
+            if msg['e'] == 'ORDER_TRADE_UPDATE':  # Order update event
+                order_status = msg['o']['X']  # Order status (FILLED, NEW)
+                order_side = msg['o']['S']  # Order side (BUY or SELL)
+                order_id = msg['o']['i']  # Order ID
+                symbol = msg['o']['s']  # Symbol of the order
 
-                if order_status == 'FILLED':  # Si la orden está ejecutada
-                    print(f"Orden ejecutada: {order_side} {symbol}, ID: {order_id}")
+                if order_status == 'FILLED':  # If the order is filled
+                    print(f"Order filled: {order_side} {symbol}, ID: {order_id}")
 
-                    # Obtener todas las órdenes abiertas
+                    # Get all open orders
                     open_orders = client.futures_get_open_orders(symbol=symbol)
                     for order in open_orders:
-                        if order['orderId'] != order_id:  # Cancelar otras órdenes
+                        if order['orderId'] != order_id:  # Cancel other orders
                             client.futures_cancel_order(symbol=symbol, orderId=order['orderId'])
-                            print(f"Cancelada la orden opuesta: {order['orderId']}")
+                            print(f"Cancelled opposite order: {order['orderId']}")
 
         except Exception as e:
-            print(f"Error al manejar el mensaje: {e}")
+            print(f"Error handling message: {e}")
 
-    # Crear el WebSocket manager
+    # Create the WebSocket manager
     twm = ThreadedWebsocketManager(api_key=api_key, api_secret=api_secret, testnet=True)
     twm.start()
 
-    # Obtener el key de escucha y suscribirse al stream de datos del usuario
+    # Get the listen key and subscribe to the user data stream
     listen_key = client.futures_stream_get_listen_key()
     twm.start_futures_user_socket(callback=handle_message)
 
-    print("WebSocket de órdenes iniciado. Escuchando actualizaciones...")
+    print("Order WebSocket started. Listening for updates...")
     return twm
 
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    # Función de estrategia (por ahora solo imprime el precio)
+    # Strategy function (currently just prints the price)
     def strategy_callback(price):
-        print(f"Precio recibido en la estrategia: {price}")
-        # Aquí puedes agregar tu lógica de estrategia (cuando la tengas)
+        print(f"Price received in strategy: {price}")
+        # Add your strategy logic here (when available)
 
-    # Empezar el WebSocket para monitorear el precio
+    # Start the WebSocket to monitor the price
     strategy_thread = threading.Thread(target=start_strategy_monitor, args=("BTCUSDT", "5m", strategy_callback))
     strategy_thread.start()
 
-    # Empezar el WebSocket para monitorear las órdenes
+    # Start the WebSocket to monitor open orders
     order_thread = threading.Thread(target=start_order_monitor, args=("BTCUSDT", client))
     order_thread.start()
 
-    # Mantener el hilo principal vivo
+    # Keep the main thread alive
     while True:
         time.sleep(1)
