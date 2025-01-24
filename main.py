@@ -8,36 +8,45 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-api_key = os.getenv('API_KEY')
-api_secret = os.getenv('API_SECRET')
+api_key = os.getenv("API_KEY")
+api_secret = os.getenv("API_SECRET")
 
 # Verifica que las claves se carguen correctamente
 if not api_key or not api_secret:
-    raise ValueError("Las claves API_KEY y API_SECRET no están configuradas correctamente en el archivo .env.")
+    raise ValueError(
+        "Las claves API_KEY y API_SECRET no están configuradas correctamente en el archivo .env."
+    )
 
 
 # Connect to Binance Futures testnet
 client = Client(api_key, api_secret, testnet=True)
 client.FUTURES_URL = "https://testnet.binancefuture.com/fapi/v1"
 
+
 def list_available_pairs():
     """List all available trading pairs on Binance Futures."""
     try:
         exchange_info = client.futures_exchange_info()  # Fetch exchange info
-        symbols = [symbol['symbol'] for symbol in exchange_info['symbols']]  # Extract symbols
+        symbols = [
+            symbol["symbol"] for symbol in exchange_info["symbols"]
+        ]  # Extract symbols
         return symbols
     except Exception as e:
         print(f"Error fetching available pairs: {e}")
         return []
 
+
 def get_current_price(symbol):
     """Fetch the current market price for a single trading pair."""
     try:
-        ticker = client.futures_symbol_ticker(symbol=symbol)  # Fetch ticker info for the symbol
-        return float(ticker['price'])  # Return the price as a float
+        ticker = client.futures_symbol_ticker(
+            symbol=symbol
+        )  # Fetch ticker info for the symbol
+        return float(ticker["price"])  # Return the price as a float
     except Exception as e:
         print(f"Error fetching price for {symbol}: {e}")
         return None
+
 
 def get_current_prices(symbols):
     """Fetch the current prices for multiple trading pairs."""
@@ -48,6 +57,7 @@ def get_current_prices(symbols):
             prices[symbol] = price  # Add the price to the dictionary
     return prices
 
+
 def get_historical_prices(symbol, interval, start_time=None, end_time=None, limit=100):
     """Fetch historical price data (candlesticks) for a given trading pair."""
     try:
@@ -56,24 +66,32 @@ def get_historical_prices(symbol, interval, start_time=None, end_time=None, limi
             interval=interval,
             startTime=start_time,
             endTime=end_time,
-            limit=limit
+            limit=limit,
         )
         return klines  # Return the historical price data (candlesticks)
     except Exception as e:
         print(f"Error fetching historical prices for {symbol}: {e}")
         return []
 
+
 def calculate_stop_loss_take_profit(entry_price, stop_loss_pct, take_profit_pct, side):
     """Calculate stop loss and take profit prices based on the entry price and percentages."""
     stop_loss = (
-        entry_price * (1 - stop_loss_pct / 100) if side == "BUY"  # Calculate stop loss for buy orders
-        else entry_price * (1 + stop_loss_pct / 100)  # Calculate stop loss for sell orders
+        entry_price * (1 - stop_loss_pct / 100)
+        if side == "BUY"  # Calculate stop loss for buy orders
+        else entry_price
+        * (1 + stop_loss_pct / 100)  # Calculate stop loss for sell orders
     )
     take_profit = (
-        entry_price * (1 + take_profit_pct / 100) if side == "BUY"  # Calculate take profit for buy orders
-        else entry_price * (1 - take_profit_pct / 100)  # Calculate take profit for sell orders
+        entry_price * (1 + take_profit_pct / 100)
+        if side == "BUY"  # Calculate take profit for buy orders
+        else entry_price
+        * (1 - take_profit_pct / 100)  # Calculate take profit for sell orders
     )
-    return round(stop_loss, 2), round(take_profit, 2)  # Return stop loss and take profit prices rounded to 2 decimals
+    return round(stop_loss, 2), round(
+        take_profit, 2
+    )  # Return stop loss and take profit prices rounded to 2 decimals
+
 
 def place_market_order(symbol, side, quantity):
     """Place a market order."""
@@ -82,12 +100,13 @@ def place_market_order(symbol, side, quantity):
             symbol=symbol,
             side=side,
             type="MARKET",  # Type of order
-            quantity=quantity  # Quantity of the asset to trade
+            quantity=quantity,  # Quantity of the asset to trade
         )
         return order  # Return the order details
     except Exception as e:
         print(f"Error placing market order for {symbol}: {e}")
         return None
+
 
 def place_oco_order(symbol, side, quantity, stop_loss, take_profit):
     """Place an OCO order (stop loss and take profit)."""
@@ -99,17 +118,20 @@ def place_oco_order(symbol, side, quantity, stop_loss, take_profit):
             price=take_profit,  # Take profit price
             stopPrice=stop_loss,  # Stop loss trigger price
             stopLimitPrice=stop_loss,  # Stop loss execution price
-            stopLimitTimeInForce="GTC"  # Good 'Til Canceled order type
+            stopLimitTimeInForce="GTC",  # Good 'Til Canceled order type
         )
         return oco_order  # Return the OCO order details
     except Exception as e:
         print(f"Error placing OCO order for {symbol}: {e}")
         return None
 
-def execute_trade(symbol, side, quantity, entry_price=None, stop_loss_pct=2.0, take_profit_pct=4.0):
+
+def execute_trade(
+    symbol, side, quantity, entry_price=None, stop_loss_pct=2.0, take_profit_pct=4.0
+):
     """
     Execute a long or short trade with OCO (One-Cancels-the-Other) for stop loss and take profit.
-    
+
     Parameters:
         symbol (str): The trading pair symbol (e.g., "BTCUSDT").
         side (str): Trade direction, either "BUY" for long or "SELL" for short.
@@ -132,7 +154,9 @@ def execute_trade(symbol, side, quantity, entry_price=None, stop_loss_pct=2.0, t
         print(f"Market order executed: {side} {quantity} {symbol} at ~{entry_price}")
 
         # Calculate stop loss and take profit prices
-        stop_loss, take_profit = calculate_stop_loss_take_profit(entry_price, stop_loss_pct, take_profit_pct, side)
+        stop_loss, take_profit = calculate_stop_loss_take_profit(
+            entry_price, stop_loss_pct, take_profit_pct, side
+        )
 
         # Place the market order
         place_market_order(symbol, side, quantity)
@@ -140,17 +164,20 @@ def execute_trade(symbol, side, quantity, entry_price=None, stop_loss_pct=2.0, t
         # Place the OCO order for stop loss and take profit
         oco_order = place_oco_order(symbol, side, quantity, stop_loss, take_profit)
         if oco_order:
-            print(f"OCO order placed with Stop Loss at {stop_loss} and Take Profit at {take_profit}")
+            print(
+                f"OCO order placed with Stop Loss at {stop_loss} and Take Profit at {take_profit}"
+            )
 
     except Exception as e:
         print(f"Error executing trade: {e}")
 
+
 # WebSocket for the price strategy
 def start_strategy_monitor(symbol, interval, callback):
     def handle_message(msg):
-        if msg['e'] == 'kline':  # Check if message type is kline (candlestick data)
-            kline = msg['k']
-            close_price = float(kline['c'])  # Close price of the candlestick
+        if msg["e"] == "kline":  # Check if message type is kline (candlestick data)
+            kline = msg["k"]
+            close_price = float(kline["c"])  # Close price of the candlestick
             print(f"Updated price: {close_price}")
             callback(close_price)
 
@@ -164,24 +191,27 @@ def start_strategy_monitor(symbol, interval, callback):
     print(f"Strategy WebSocket started for {symbol} ({interval}).")
     return twm
 
+
 # WebSocket for monitoring open orders
 def start_order_monitor(symbol, client):
     def handle_message(msg):
         try:
-            if msg['e'] == 'ORDER_TRADE_UPDATE':  # Order update event
-                order_status = msg['o']['X']  # Order status (FILLED, NEW)
-                order_side = msg['o']['S']  # Order side (BUY or SELL)
-                order_id = msg['o']['i']  # Order ID
-                symbol = msg['o']['s']  # Symbol of the order
+            if msg["e"] == "ORDER_TRADE_UPDATE":  # Order update event
+                order_status = msg["o"]["X"]  # Order status (FILLED, NEW)
+                order_side = msg["o"]["S"]  # Order side (BUY or SELL)
+                order_id = msg["o"]["i"]  # Order ID
+                symbol = msg["o"]["s"]  # Symbol of the order
 
-                if order_status == 'FILLED':  # If the order is filled
+                if order_status == "FILLED":  # If the order is filled
                     print(f"Order filled: {order_side} {symbol}, ID: {order_id}")
 
                     # Get all open orders
                     open_orders = client.futures_get_open_orders(symbol=symbol)
                     for order in open_orders:
-                        if order['orderId'] != order_id:  # Cancel other orders
-                            client.futures_cancel_order(symbol=symbol, orderId=order['orderId'])
+                        if order["orderId"] != order_id:  # Cancel other orders
+                            client.futures_cancel_order(
+                                symbol=symbol, orderId=order["orderId"]
+                            )
                             print(f"Cancelled opposite order: {order['orderId']}")
 
         except Exception as e:
@@ -198,6 +228,7 @@ def start_order_monitor(symbol, client):
     print("Order WebSocket started. Listening for updates...")
     return twm
 
+
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -207,11 +238,15 @@ if __name__ == "__main__":
         # Add your strategy logic here (when available)
 
     # Start the WebSocket to monitor the price
-    strategy_thread = threading.Thread(target=start_strategy_monitor, args=("BTCUSDT", "5m", strategy_callback))
+    strategy_thread = threading.Thread(
+        target=start_strategy_monitor, args=("BTCUSDT", "5m", strategy_callback)
+    )
     strategy_thread.start()
 
     # Start the WebSocket to monitor open orders
-    order_thread = threading.Thread(target=start_order_monitor, args=("BTCUSDT", client))
+    order_thread = threading.Thread(
+        target=start_order_monitor, args=("BTCUSDT", client)
+    )
     order_thread.start()
 
     # Keep the main thread alive
