@@ -3,10 +3,18 @@ from binance import ThreadedWebsocketManager
 import threading
 import time
 import asyncio
+import os
+from dotenv import load_dotenv
 
-# API keys (example mock keys)
-api_key = '7de4ca57d53aac719f84f4f2f1ceee269512766e19734dca3beaec464c92a2d1'
-api_secret = '15122b41c53e6293bd122333bf8f31a12e7f8b876595a290473487e38a25d3f0'
+load_dotenv()
+
+api_key = os.getenv('API_KEY')
+api_secret = os.getenv('API_SECRET')
+
+# Verifica que las claves se carguen correctamente
+if not api_key or not api_secret:
+    raise ValueError("Las claves API_KEY y API_SECRET no están configuradas correctamente en el archivo .env.")
+
 
 # Connect to Binance Futures testnet
 client = Client(api_key, api_secret, testnet=True)
