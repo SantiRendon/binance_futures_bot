@@ -4,9 +4,6 @@ import threading
 import time
 import asyncio
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 api_key = os.getenv("API_KEY")
 api_secret = os.getenv("API_SECRET")
@@ -222,7 +219,7 @@ def start_order_monitor(symbol, client):
     twm.start()
 
     # Get the listen key and subscribe to the user data stream
-    listen_key = client.futures_stream_get_listen_key()
+    client.futures_stream_get_listen_key()
     twm.start_futures_user_socket(callback=handle_message)
 
     print("Order WebSocket started. Listening for updates...")
